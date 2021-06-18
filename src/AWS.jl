@@ -1,7 +1,8 @@
 module AWS
 
-using Compat: Compat, @something
+using Base: BufferStream
 using Base64
+using Compat: Compat, @something
 using Dates
 using HTTP
 using MbedTLS
@@ -32,6 +33,7 @@ include("AWSConfig.jl")
 include("AWSMetadata.jl")
 
 include(joinpath("utilities", "request.jl"))
+include(joinpath("utilities", "response.jl"))
 include(joinpath("utilities", "sign.jl"))
 
 
@@ -203,6 +205,9 @@ function (service::RestXMLService)(
     aws_config::AbstractAWSConfig=global_aws_config(),
 )
     return_headers = _pop!(args, "return_headers", false)
+    return_stream = _pop!(args, "return_stream", false)
+    return_raw = _pop!(args, "return_raw", false)
+    response_stream = _pop!(args, "response_stream", nothing)
 
     request = Request(;
         _extract_common_kw_args(service, args)...,
@@ -226,7 +231,8 @@ function (service::RestXMLService)(
 
     request.url = generate_service_url(aws_config, request.service, request.resource)
 
-    return submit_request(aws_config, request; return_headers=return_headers)
+    response = submit_request(aws_config, request)
+    return legacy(response; return_headers, return_stream, return_raw, response_stream)
 end
 
 
@@ -254,6 +260,9 @@ function (service::QueryService)(
 )
     POST_RESOURCE = "/"
     return_headers = _pop!(args, "return_headers", false)
+    return_stream = _pop!(args, "return_stream", false)
+    return_raw = _pop!(args, "return_raw", false)
+    response_stream = _pop!(args, "response_stream", nothing)
 
     request = Request(;
         _extract_common_kw_args(service, args)...,
@@ -268,7 +277,8 @@ function (service::QueryService)(
     args["Version"] = service.api_version
     request.content = HTTP.escapeuri(_flatten_query(service.name, args))
 
-    return submit_request(aws_config, request; return_headers=return_headers)
+    response = submit_request(aws_config, request)
+    return legacy(response; return_headers, return_stream, return_raw, response_stream)
 end
 
 """
@@ -295,6 +305,9 @@ function (service::JSONService)(
 )
     POST_RESOURCE = "/"
     return_headers = _pop!(args, "return_headers", false)
+    return_stream = _pop!(args, "return_stream", false)
+    return_raw = _pop!(args, "return_raw", false)
+    response_stream = _pop!(args, "response_stream", nothing)
 
     request = Request(;
         _extract_common_kw_args(service,args)...,
@@ -307,7 +320,8 @@ function (service::JSONService)(
     request.headers["Content-Type"] = "application/x-amz-json-$(service.json_version)"
     request.headers["X-Amz-Target"] = "$(service.target).$(operation)"
 
-    return submit_request(aws_config, request; return_headers=return_headers)
+    response = submit_request(aws_config, request)
+    return legacy(response; return_headers, return_stream, return_raw, response_stream)
 end
 
 """
@@ -334,6 +348,9 @@ function (service::RestJSONService)(
     aws_config::AbstractAWSConfig=global_aws_config(),
 )
     return_headers = _pop!(args, "return_headers", false)
+    return_stream = _pop!(args, "return_stream", false)
+    return_raw = _pop!(args, "return_raw", false)
+    response_stream = _pop!(args, "response_stream", nothing)
 
     request = Request(;
         _extract_common_kw_args(service, args)...,
@@ -350,7 +367,8 @@ function (service::RestJSONService)(
     request.headers["Content-Type"] = "application/json"
     request.content = json(args)
 
-    return submit_request(aws_config, request; return_headers=return_headers)
+    response = submit_request(aws_config, request)
+    return legacy(response; return_headers, return_stream, return_raw, response_stream)
 end
 
 end  # module AWS

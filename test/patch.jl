@@ -48,14 +48,15 @@ function _response(; version::VersionNumber=version, status::Int64=status, heade
     response.version = version
     response.status = status
     response.headers = headers
-    response.body = Vector{UInt8}(body)
+    response.body = b"[Message Body was streamed]"
 
-    return response
+    b = Base.BufferStream()
+    write(b, body)
+
+    return AWS.Response(response, b)
 end
 
-
-
-function _aws_http_request_patch(response::HTTP.Messages.Response=_response())
+function _aws_http_request_patch(response::AWS.Response=_response())
     return @patch AWS._http_request(request::Request) = response
 end
 

@@ -8,16 +8,13 @@ Base.@kwdef mutable struct Request
     resource::String=""
     url::String=""
 
-    return_stream::Bool=false
-    response_stream::Union{<:IO, Nothing}=nothing
     http_options::AbstractDict{Symbol,<:Any}=LittleDict{Symbol,String}()
-    return_raw::Bool=false
     response_dict_type::Type{<:AbstractDict}=LittleDict
 end
 
 
 """
-    submit_request(aws::AbstractAWSConfig, request::Request; return_headers::Bool=false)
+    submit_request(aws::AbstractAWSConfig, request::Request)
 
 Submit the request to AWS.
 
@@ -25,13 +22,10 @@ Submit the request to AWS.
 - `aws::AbstractAWSConfig`: AWSConfig containing credentials and other information for fulfilling the request, default value is the global configuration
 - `request::Request`: All the information about making a request to AWS
 
-# Keywords
-- `return_headers::Bool=false`: True if you want the headers from the response returned back
-
 # Returns
-- `Tuple or Dict`: Tuple if returning_headers, otherwise just return a Dict of the response body
+- `Response`: A struct containing the response
 """
-function submit_request(aws::AbstractAWSConfig, request::Request; return_headers::Bool=false)
+function submit_request(aws::AbstractAWSConfig, request::Request)
     response = nothing
     TOO_MANY_REQUESTS = 429
     EXPIRED_ERROR_CODES = ["ExpiredToken", "ExpiredTokenException", "RequestExpired"]
@@ -91,48 +85,7 @@ function submit_request(aws::AbstractAWSConfig, request::Request; return_headers
         end
     end
 
-    response_dict_type = request.response_dict_type
-
-    # For HEAD request, return headers...
-    if request.request_method == "HEAD"
-        return response_dict_type(response.headers)
-    end
-
-    # Return response stream if requested...
-    if request.return_stream
-        return request.response_stream
-    end
-
-    # Return raw data if requested...
-    if request.return_raw
-        return (return_headers ? (response.body, response.headers) : response.body)
-    end
-
-    # Parse response data according to mimetype...
-    mime = HTTP.header(response, "Content-Type", "")
-
-    if isempty(mime)
-        if length(response.body) > 5 && response.body[1:5] == b"<?xml"
-            mime = "text/xml"
-        end
-    end
-
-    body = String(copy(response.body))
-
-    if occursin(r"/xml", mime)
-        xml_dict_type = response_dict_type{Union{Symbol, String}, Any}
-        body = parse_xml(body)
-        root = XMLDict.root(body.x)
-
-        return (return_headers ? (xml_dict(root, xml_dict_type), response_dict_type(response.headers)) : xml_dict(root, xml_dict_type))
-    elseif occursin(r"/x-amz-json-1.[01]$", mime) || endswith(mime, "json")
-        info = isempty(response.body) ? nothing : JSON.parse(body, dicttype=response_dict_type)
-        return (return_headers ? (info, response_dict_type(response.headers)) : info)
-    elseif startswith(mime, "text/")
-        return (return_headers ? (body, response_dict_type(response.headers)) : body)
-    else
-        return (return_headers ? (response.body, response.headers) : response.body)
-    end
+    return response
 end
 
 
@@ -140,20 +93,20 @@ function _http_request(request::Request)
     @repeat 4 try
         http_stack = HTTP.stack(redirect=false, retry=false, aws_authorization=false)
 
-        if request.return_stream && request.response_stream === nothing
-            request.response_stream = Base.BufferStream()
-        end
+        response_stream = BufferStream()
 
-        return HTTP.request(
+        r = HTTP.request(
             http_stack,
             request.request_method,
             HTTP.URI(request.url),
             HTTP.mkheaders(request.headers),
             request.content;
             require_ssl_verification=false,
-            response_stream=request.response_stream,
+            response_stream=response_stream,
             request.http_options...
         )
+
+        return Response(r, response_stream)
     catch e
         # Base.IOError is needed because HTTP.jl can often have errors that aren't
         # caught and wrapped in an HTTP.IOError

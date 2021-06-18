@@ -112,8 +112,6 @@ end
     end
 
     @testset "HEAD request method" begin
-        expected_result_type = LittleDict
-
         request = Request(
             service="s3",
             api_version="api_version",
@@ -122,10 +120,10 @@ end
         )
 
         apply(Patches._aws_http_request_patch()) do
-            result = AWS.submit_request(aws, request)
+            response = AWS.submit_request(aws, request)
 
-            @test result == expected_result_type(Patches.headers)
-            @test result isa expected_result_type
+            @test response.headers == Patches.headers
+            @test response.headers isa Vector
         end
     end
 
@@ -134,15 +132,13 @@ end
             service="s3",
             api_version="api_version",
             request_method="GET",
-            return_stream=true,
-            response_stream=Base.BufferStream(),
             url="https://s3.us-east-1.amazonaws.com/sample-bucket"
         )
 
         apply(Patches._aws_http_request_patch()) do
-            result = AWS.submit_request(aws, request)
+            response = AWS.submit_request(aws, request)
 
-            @test result == request.response_stream
+            @test response.body isa Base.BufferStream
         end
     end
 
@@ -155,21 +151,11 @@ end
             return_raw=true
         )
 
-        @testset "body" begin
-            apply(Patches._aws_http_request_patch()) do
-                result = AWS.submit_request(aws, request)
+        apply(Patches._aws_http_request_patch()) do
+            response = AWS.submit_request(aws, request)
 
-                @test String(result) == Patches.body
-            end
-        end
-
-        @testset "body and headers" begin
-            apply(Patches._aws_http_request_patch()) do
-                body, headers = AWS.submit_request(aws, request; return_headers=true)
-
-                @test String(body) == Patches.body
-                @test headers == Patches.headers
-            end
+            @test String(response.body) == Patches.body
+            @test response.headers == Patches.headers
         end
     end
 
@@ -188,46 +174,26 @@ end
 
                 response = Patches._response(headers=expected_headers, body=expected_body)
                 apply(Patches._aws_http_request_patch(response)) do
+                    response = AWS.submit_request(aws, request)
 
-                    @testset "body" begin
-                       result = AWS.submit_request(aws, request)
-
-                       @test String(result) == expected_body
-                    end
-
-                    @testset "body and headers" begin
-                        body, headers = AWS.submit_request(aws, request; return_headers=true)
-
-                        @test String(body) == expected_body
-                        @test headers == expected_headers
-                    end
+                    @test String(response.body) == expected_body
+                    @test response.headers == expected_headers
                 end
             end
 
             @testset "text/xml" begin
                 expected_body_type = LittleDict{Union{Symbol, String}, Any}
                 expected_body = _expected_body(Patches.body, expected_body_type)
-                expected_header_type = LittleDict{SubString{String}, SubString{String}}
                 expected_headers = Pair["Content-Type" => "text/xml"]
 
                 response = Patches._response(headers=expected_headers)
                 apply(Patches._aws_http_request_patch(response)) do
-                    @testset "body" begin
-                        result = AWS.submit_request(aws, request)
+                    response = AWS.submit_request(aws, request)
 
-                        @test result isa expected_body_type
-                        @test result == expected_body
-                    end
-
-                    @testset "body and headers" begin
-                        body, headers = AWS.submit_request(aws, request; return_headers=true)
-
-                        @test body == expected_body
-                        @test body isa expected_body_type
-
-                        @test headers == LittleDict(expected_headers)
-                        @test headers isa expected_header_type
-                    end
+                    @test body isa expected_body_type
+                    @test body == expected_body
+                    @test response.headers == expected_headers
+                    @test response.headers isa Vector
                 end
             end
         end
@@ -246,22 +212,13 @@ end
 
             response = Patches._response(headers=expected_headers)
             apply(Patches._aws_http_request_patch(response)) do
-                @testset "body" begin
-                    result = AWS.submit_request(aws, request)
+                response = AWS.submit_request(aws, request)
+                body = parse(expected_body_type, response)
 
-                    @test result == expected_body
-                    @test result isa expected_body_type
-                end
-
-                @testset "body and headers" begin
-                    body, headers = AWS.submit_request(aws, request; return_headers=true)
-
-                    @test body == expected_body
-                    @test body isa expected_body_type
-
-                    @test headers == LittleDict(expected_headers)
-                    @test headers isa LittleDict{SubString{String}, SubString{String}}
-               end
+                @test body isa expected_body_type
+                @test body == expected_body
+                @test response.headers isa Vector
+                @test response.headers == expected_headers
             end
         end
 
@@ -285,22 +242,13 @@ end
 
             response = Patches._response(body=json_body, headers=json_headers)
             apply(Patches._aws_http_request_patch(response)) do
-                @testset "body" begin
-                    result = AWS.submit_request(aws, request)
+                response = AWS.submit_request(aws, request)
+                body = parse(expected_body_type, response)
 
-                    @test result isa expected_body_type
-                    @test result == expected_body
-                end
-
-                @testset "body and headers" begin
-                    body, headers = AWS.submit_request(aws, request; return_headers=true)
-
-                    @test body == expected_body
-                    @test body isa expected_body_type
-
-                    @test headers == LittleDict(json_headers)
-                    @test headers isa LittleDict{SubString{String}, SubString{String}}
-                end
+                @test body isa expected_body_type
+                @test body == expected_body
+                @test response.headers isa Vector
+                @test response.headers == expected_headers
             end
         end
 
@@ -318,22 +266,13 @@ end
 
             response = Patches._response(headers=expected_headers)
             apply(Patches._aws_http_request_patch(response)) do
-                @testset "body" begin
-                    result = AWS.submit_request(aws, request)
+                response = AWS.submit_request(aws, request)
+                body = String(response.body)
 
-                    @test result isa String
-                    @test result == expected_body
-                end
-
-                @testset "body and headers" begin
-                    body, headers = AWS.submit_request(aws, request; return_headers=true)
-
-                    @test body == expected_body
-                    @test body isa String
-
-                    @test headers == LittleDict(expected_headers)
-                    @test headers isa expected_header_type
-                end
+                @test body isa String
+                @test body == expected_body
+                @test response.headers isa Vector
+                @test response.headers == expected_headers
             end
         end
     end

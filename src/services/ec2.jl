@@ -482,6 +482,27 @@ associate_iam_instance_profile(IamInstanceProfile, InstanceId; aws_config::Abstr
 associate_iam_instance_profile(IamInstanceProfile, InstanceId, params::AbstractDict{String}; aws_config::AbstractAWSConfig=global_aws_config()) = ec2("AssociateIamInstanceProfile", Dict{String, Any}(mergewith(_merge, Dict{String, Any}("IamInstanceProfile"=>IamInstanceProfile, "InstanceId"=>InstanceId), params)); aws_config=aws_config)
 
 """
+    associate_instance_event_window(association_target, instance_event_window_id)
+    associate_instance_event_window(association_target, instance_event_window_id, params::Dict{String,<:Any})
+
+Associates one or more targets with an event window. Only one type of target (instance IDs,
+Dedicated Host IDs, or tags) can be specified with an event window. For more information,
+see Define event windows for scheduled events in the Amazon EC2 User Guide.
+
+# Arguments
+- `association_target`: One or more targets associated with the specified event window.
+- `instance_event_window_id`: The ID of the event window.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"DryRun"`: Checks whether you have the required permissions for the action, without
+  actually making the request, and provides an error response. If you have the required
+  permissions, the error response is DryRunOperation. Otherwise, it is UnauthorizedOperation.
+"""
+associate_instance_event_window(AssociationTarget, InstanceEventWindowId; aws_config::AbstractAWSConfig=global_aws_config()) = ec2("AssociateInstanceEventWindow", Dict{String, Any}("AssociationTarget"=>AssociationTarget, "InstanceEventWindowId"=>InstanceEventWindowId); aws_config=aws_config)
+associate_instance_event_window(AssociationTarget, InstanceEventWindowId, params::AbstractDict{String}; aws_config::AbstractAWSConfig=global_aws_config()) = ec2("AssociateInstanceEventWindow", Dict{String, Any}(mergewith(_merge, Dict{String, Any}("AssociationTarget"=>AssociationTarget, "InstanceEventWindowId"=>InstanceEventWindowId), params)); aws_config=aws_config)
+
+"""
     associate_route_table(route_table_id)
     associate_route_table(route_table_id, params::Dict{String,<:Any})
 
@@ -1760,6 +1781,44 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
 """
 create_image(instanceId, name; aws_config::AbstractAWSConfig=global_aws_config()) = ec2("CreateImage", Dict{String, Any}("instanceId"=>instanceId, "name"=>name); aws_config=aws_config)
 create_image(instanceId, name, params::AbstractDict{String}; aws_config::AbstractAWSConfig=global_aws_config()) = ec2("CreateImage", Dict{String, Any}(mergewith(_merge, Dict{String, Any}("instanceId"=>instanceId, "name"=>name), params)); aws_config=aws_config)
+
+"""
+    create_instance_event_window()
+    create_instance_event_window(params::Dict{String,<:Any})
+
+Creates an event window in which scheduled events for the associated Amazon EC2 instances
+can run. You can define either a set of time ranges or a cron expression when creating the
+event window, but not both. All event window times are in UTC. You can create up to 200
+event windows per Amazon Web Services Region. When you create the event window, targets
+(instance IDs, Dedicated Host IDs, or tags) are not yet associated with it. To ensure that
+the event window can be used, you must associate one or more targets with it by using the
+AssociateInstanceEventWindow API.  Event windows are applicable only for scheduled events
+that stop, reboot, or terminate instances. Event windows are not applicable for:
+Expedited scheduled events and network maintenance events.    Unscheduled maintenance such
+as AutoRecovery and unplanned reboots.    For more information, see Define event windows
+for scheduled events in the Amazon EC2 User Guide.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"CronExpression"`: The cron expression for the event window, for example, * 0-4,20-23 *
+  * 1,5. If you specify a cron expression, you can't specify a time range. Constraints:
+  Only hour and day of the week values are supported.   For day of the week values, you can
+  specify either integers 0 through 6, or alternative single values SUN through SAT.   The
+  minute, month, and year must be specified by *.   The hour value must be one or a multiple
+  range, for example, 0-4 or 0-4,20-23.   Each hour range must be &gt;= 2 hours, for example,
+  0-2 or 20-23.   The event window must be &gt;= 4 hours. The combined total time ranges in
+  the event window must be &gt;= 4 hours.   For more information about cron expressions, see
+  cron on the Wikipedia website.
+- `"DryRun"`: Checks whether you have the required permissions for the action, without
+  actually making the request, and provides an error response. If you have the required
+  permissions, the error response is DryRunOperation. Otherwise, it is UnauthorizedOperation.
+- `"Name"`: The name of the event window.
+- `"TagSpecification"`: The tags to apply to the event window.
+- `"TimeRange"`: The time range for the event window. If you specify a time range, you
+  can't specify a cron expression.
+"""
+create_instance_event_window(; aws_config::AbstractAWSConfig=global_aws_config()) = ec2("CreateInstanceEventWindow"; aws_config=aws_config)
+create_instance_event_window(params::AbstractDict{String}; aws_config::AbstractAWSConfig=global_aws_config()) = ec2("CreateInstanceEventWindow", params; aws_config=aws_config)
 
 """
     create_instance_export_task(export_to_s3, instance_id, target_environment)
@@ -3510,6 +3569,27 @@ delete_fpga_image(FpgaImageId; aws_config::AbstractAWSConfig=global_aws_config()
 delete_fpga_image(FpgaImageId, params::AbstractDict{String}; aws_config::AbstractAWSConfig=global_aws_config()) = ec2("DeleteFpgaImage", Dict{String, Any}(mergewith(_merge, Dict{String, Any}("FpgaImageId"=>FpgaImageId), params)); aws_config=aws_config)
 
 """
+    delete_instance_event_window(instance_event_window_id)
+    delete_instance_event_window(instance_event_window_id, params::Dict{String,<:Any})
+
+Deletes the specified event window. For more information, see Define event windows for
+scheduled events in the Amazon EC2 User Guide.
+
+# Arguments
+- `instance_event_window_id`: The ID of the event window.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"DryRun"`: Checks whether you have the required permissions for the action, without
+  actually making the request, and provides an error response. If you have the required
+  permissions, the error response is DryRunOperation. Otherwise, it is UnauthorizedOperation.
+- `"ForceDelete"`: Specify true to force delete the event window. Use the force delete
+  parameter if the event window is currently associated with targets.
+"""
+delete_instance_event_window(InstanceEventWindowId; aws_config::AbstractAWSConfig=global_aws_config()) = ec2("DeleteInstanceEventWindow", Dict{String, Any}("InstanceEventWindowId"=>InstanceEventWindowId); aws_config=aws_config)
+delete_instance_event_window(InstanceEventWindowId, params::AbstractDict{String}; aws_config::AbstractAWSConfig=global_aws_config()) = ec2("DeleteInstanceEventWindow", Dict{String, Any}(mergewith(_merge, Dict{String, Any}("InstanceEventWindowId"=>InstanceEventWindowId), params)); aws_config=aws_config)
+
+"""
     delete_internet_gateway(internet_gateway_id)
     delete_internet_gateway(internet_gateway_id, params::Dict{String,<:Any})
 
@@ -3964,8 +4044,8 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   specific tags. If you specify a tag key without a tag value, we delete any tag with this
   key regardless of its value. If you specify a tag key with an empty string as the tag
   value, we delete the tag only if its value is an empty string. If you omit this parameter,
-  we delete all user-defined tags for the specified resources. We do not delete AWS-generated
-  tags (tags that have the aws: prefix).
+  we delete all user-defined tags for the specified resources. We do not delete Amazon Web
+  Services-generated tags (tags that have the aws: prefix).
 """
 delete_tags(resourceId; aws_config::AbstractAWSConfig=global_aws_config()) = ec2("DeleteTags", Dict{String, Any}("resourceId"=>resourceId); aws_config=aws_config)
 delete_tags(resourceId, params::AbstractDict{String}; aws_config::AbstractAWSConfig=global_aws_config()) = ec2("DeleteTags", Dict{String, Any}(mergewith(_merge, Dict{String, Any}("resourceId"=>resourceId), params)); aws_config=aws_config)
@@ -4453,7 +4533,7 @@ deregister_image(ImageId, params::AbstractDict{String}; aws_config::AbstractAWSC
     deregister_instance_event_notification_attributes()
     deregister_instance_event_notification_attributes(params::Dict{String,<:Any})
 
-Deregisters tag keys to prevent tags that have the specified tag keys from being included
+c Deregisters tag keys to prevent tags that have the specified tag keys from being included
 in scheduled event notifications for resources in the Region.
 
 # Optional Parameters
@@ -5703,6 +5783,47 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
 """
 describe_instance_event_notification_attributes(; aws_config::AbstractAWSConfig=global_aws_config()) = ec2("DescribeInstanceEventNotificationAttributes"; aws_config=aws_config)
 describe_instance_event_notification_attributes(params::AbstractDict{String}; aws_config::AbstractAWSConfig=global_aws_config()) = ec2("DescribeInstanceEventNotificationAttributes", params; aws_config=aws_config)
+
+"""
+    describe_instance_event_windows()
+    describe_instance_event_windows(params::Dict{String,<:Any})
+
+Describes the specified event windows or all event windows. If you specify event window
+IDs, the output includes information for only the specified event windows. If you specify
+filters, the output includes information for only those event windows that meet the filter
+criteria. If you do not specify event windows IDs or filters, the output includes
+information for all event windows, which can affect performance. We recommend that you use
+pagination to ensure that the operation returns quickly and successfully.  For more
+information, see Define event windows for scheduled events in the Amazon EC2 User Guide.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"DryRun"`: Checks whether you have the required permissions for the action, without
+  actually making the request, and provides an error response. If you have the required
+  permissions, the error response is DryRunOperation. Otherwise, it is UnauthorizedOperation.
+- `"Filter"`: One or more filters.    dedicated-host-id - The event windows associated with
+  the specified Dedicated Host ID.    event-window-name - The event windows associated with
+  the specified names.     instance-id - The event windows associated with the specified
+  instance ID.    instance-tag - The event windows associated with the specified tag and
+  value.    instance-tag-key - The event windows associated with the specified tag key,
+  regardless of the value.    instance-tag-value - The event windows associated with the
+  specified tag value, regardless of the key.    tag:&lt;key&gt; - The key/value combination
+  of a tag assigned to the event window. Use the tag key in the filter name and the tag value
+  as the filter value. For example, to find all resources that have a tag with the key Owner
+  and the value CMX, specify tag:Owner for the filter name and CMX for the filter value.
+  tag-key - The key of a tag assigned to the event window. Use this filter to find all event
+  windows that have a tag with a specific key, regardless of the tag value.     tag-value -
+  The value of a tag assigned to the event window. Use this filter to find all event windows
+  that have a tag with a specific value, regardless of the tag key.
+- `"InstanceEventWindowId"`: The IDs of the event windows.
+- `"MaxResults"`: The maximum number of results to return in a single call. To retrieve the
+  remaining results, make another call with the returned NextToken value. This value can be
+  between 20 and 500. You cannot specify this parameter and the event window IDs parameter in
+  the same call.
+- `"NextToken"`: The token to request the next page of results.
+"""
+describe_instance_event_windows(; aws_config::AbstractAWSConfig=global_aws_config()) = ec2("DescribeInstanceEventWindows"; aws_config=aws_config)
+describe_instance_event_windows(params::AbstractDict{String}; aws_config::AbstractAWSConfig=global_aws_config()) = ec2("DescribeInstanceEventWindows", params; aws_config=aws_config)
 
 """
     describe_instance_status()
@@ -8779,6 +8900,26 @@ disassociate_iam_instance_profile(AssociationId; aws_config::AbstractAWSConfig=g
 disassociate_iam_instance_profile(AssociationId, params::AbstractDict{String}; aws_config::AbstractAWSConfig=global_aws_config()) = ec2("DisassociateIamInstanceProfile", Dict{String, Any}(mergewith(_merge, Dict{String, Any}("AssociationId"=>AssociationId), params)); aws_config=aws_config)
 
 """
+    disassociate_instance_event_window(association_target, instance_event_window_id)
+    disassociate_instance_event_window(association_target, instance_event_window_id, params::Dict{String,<:Any})
+
+Disassociates one or more targets from an event window. For more information, see Define
+event windows for scheduled events in the Amazon EC2 User Guide.
+
+# Arguments
+- `association_target`: One or more targets to disassociate from the specified event window.
+- `instance_event_window_id`: The ID of the event window.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"DryRun"`: Checks whether you have the required permissions for the action, without
+  actually making the request, and provides an error response. If you have the required
+  permissions, the error response is DryRunOperation. Otherwise, it is UnauthorizedOperation.
+"""
+disassociate_instance_event_window(AssociationTarget, InstanceEventWindowId; aws_config::AbstractAWSConfig=global_aws_config()) = ec2("DisassociateInstanceEventWindow", Dict{String, Any}("AssociationTarget"=>AssociationTarget, "InstanceEventWindowId"=>InstanceEventWindowId); aws_config=aws_config)
+disassociate_instance_event_window(AssociationTarget, InstanceEventWindowId, params::AbstractDict{String}; aws_config::AbstractAWSConfig=global_aws_config()) = ec2("DisassociateInstanceEventWindow", Dict{String, Any}(mergewith(_merge, Dict{String, Any}("AssociationTarget"=>AssociationTarget, "InstanceEventWindowId"=>InstanceEventWindowId), params)); aws_config=aws_config)
+
+"""
     disassociate_route_table(association_id)
     disassociate_route_table(association_id, params::Dict{String,<:Any})
 
@@ -10456,6 +10597,39 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
 """
 modify_instance_event_start_time(InstanceEventId, InstanceId, NotBefore; aws_config::AbstractAWSConfig=global_aws_config()) = ec2("ModifyInstanceEventStartTime", Dict{String, Any}("InstanceEventId"=>InstanceEventId, "InstanceId"=>InstanceId, "NotBefore"=>NotBefore); aws_config=aws_config)
 modify_instance_event_start_time(InstanceEventId, InstanceId, NotBefore, params::AbstractDict{String}; aws_config::AbstractAWSConfig=global_aws_config()) = ec2("ModifyInstanceEventStartTime", Dict{String, Any}(mergewith(_merge, Dict{String, Any}("InstanceEventId"=>InstanceEventId, "InstanceId"=>InstanceId, "NotBefore"=>NotBefore), params)); aws_config=aws_config)
+
+"""
+    modify_instance_event_window(instance_event_window_id)
+    modify_instance_event_window(instance_event_window_id, params::Dict{String,<:Any})
+
+Modifies the specified event window. You can define either a set of time ranges or a cron
+expression when modifying the event window, but not both. To modify the targets associated
+with the event window, use the AssociateInstanceEventWindow and
+DisassociateInstanceEventWindow API. If Amazon Web Services has already scheduled an event,
+modifying an event window won't change the time of the scheduled event. For more
+information, see Define event windows for scheduled events in the Amazon EC2 User Guide.
+
+# Arguments
+- `instance_event_window_id`: The ID of the event window.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"CronExpression"`: The cron expression of the event window, for example, * 0-4,20-23 * *
+  1,5. Constraints:   Only hour and day of the week values are supported.   For day of the
+  week values, you can specify either integers 0 through 6, or alternative single values SUN
+  through SAT.   The minute, month, and year must be specified by *.   The hour value must be
+  one or a multiple range, for example, 0-4 or 0-4,20-23.   Each hour range must be &gt;= 2
+  hours, for example, 0-2 or 20-23.   The event window must be &gt;= 4 hours. The combined
+  total time ranges in the event window must be &gt;= 4 hours.   For more information about
+  cron expressions, see cron on the Wikipedia website.
+- `"DryRun"`: Checks whether you have the required permissions for the action, without
+  actually making the request, and provides an error response. If you have the required
+  permissions, the error response is DryRunOperation. Otherwise, it is UnauthorizedOperation.
+- `"Name"`: The name of the event window.
+- `"TimeRange"`: The time ranges of the event window.
+"""
+modify_instance_event_window(InstanceEventWindowId; aws_config::AbstractAWSConfig=global_aws_config()) = ec2("ModifyInstanceEventWindow", Dict{String, Any}("InstanceEventWindowId"=>InstanceEventWindowId); aws_config=aws_config)
+modify_instance_event_window(InstanceEventWindowId, params::AbstractDict{String}; aws_config::AbstractAWSConfig=global_aws_config()) = ec2("ModifyInstanceEventWindow", Dict{String, Any}(mergewith(_merge, Dict{String, Any}("InstanceEventWindowId"=>InstanceEventWindowId), params)); aws_config=aws_config)
 
 """
     modify_instance_metadata_options(instance_id)
